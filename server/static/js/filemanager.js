@@ -45,6 +45,47 @@ window.FileManager = {
             }
         });
 
+        // Folder Sync via HTML5 File System Access or webkitdirectory
+        safeOn('btn-sync-folder', 'click', async () => {
+            if (window.showDirectoryPicker) {
+                try {
+                    const dirHandle = await window.showDirectoryPicker();
+                    App.showToast(`"${dirHandle.name}" taranıyor ve eşitleniyor...`, 'info');
+                    
+                    const filesToUpload = [];
+                    const readHandle = async (handle, subPath = '') => {
+                        for await (const entry of handle.values()) {
+                            if (entry.kind === 'file') {
+                                const file = await entry.getFile();
+                                filesToUpload.push({
+                                    file: file,
+                                    targetSubPath: subPath ? `${dirHandle.name}/${subPath}` : dirHandle.name
+                                });
+                            } else if (entry.kind === 'directory') {
+                                const nextSub = subPath ? `${subPath}/${entry.name}` : entry.name;
+                                await readHandle(entry, nextSub);
+                            }
+                        }
+                    };
+                    
+                    await readHandle(dirHandle, '');
+                    if (filesToUpload.length > 0) {
+                        this.uploadStructuredFiles(filesToUpload, App.state.currentPath);
+                    } else {
+                        App.showToast('Seçilen klasör boş.', 'info');
+                    }
+                } catch (e) {
+                    if (e.name !== 'AbortError') {
+                        const input = document.getElementById('folder-upload-input');
+                        if (input) input.click();
+                    }
+                }
+            } else {
+                const input = document.getElementById('folder-upload-input');
+                if (input) input.click();
+            }
+        });
+
         // Folder upload button (HTML5 webkitdirectory)
         safeOn('btn-upload-folder', 'click', () => {
             const input = document.getElementById('folder-upload-input');

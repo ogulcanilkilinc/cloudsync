@@ -1,15 +1,15 @@
 {
-  "server_url": "http://localhost:8765",
+  "server_url": "https://ogulcan-cloudsync.onrender.com",
   "username": "admin",
   "password": "admin123",
-  "device_name": "bilgisayarim",
+  "device_name": "Ana-Bilgisayar",
   "sync_folders": [
     {
-      "local_path": "./belgelerim",
-      "remote_path": ""
+      "local_path": "C:\\Users\\user\\OneDrive - hacettepe.edu.tr\\Masaüstü\\cloudsync test",
+      "remote_path": "cloudsync test"
     }
   ],
-  "sync_interval_seconds": 15,
+  "sync_interval_seconds": 10,
   "ignored_patterns": [
     "*.tmp",
     "*.swp",
