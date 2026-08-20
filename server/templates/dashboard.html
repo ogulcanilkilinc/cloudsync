@@ -38,6 +38,17 @@
                 <!-- Tree items will be dynamically injected here -->
             </div>
             <div class="sidebar-footer">
+                <div id="live-watcher-box" class="live-watcher-box" style="margin-bottom: 0.8rem; padding: 0.8rem; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; font-size: 0.85rem; display: none;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
+                        <span style="font-weight: 600; color: #10b981; display: flex; align-items: center; gap: 6px;">
+                            <span class="pulse-dot"></span> Canlı İzleme Aktif
+                        </span>
+                        <button id="btn-stop-live-sync" class="btn btn-sm btn-danger" style="padding: 2px 8px; font-size: 0.75rem; border-radius: 4px;">Durdur</button>
+                    </div>
+                    <div id="live-watcher-folder-name" style="color: var(--text-main); font-weight: 500; word-break: break-all; margin-bottom: 0.2rem;">📁 cloudsync test</div>
+                    <div id="live-watcher-stats" style="color: var(--text-muted); font-size: 0.75rem;">Son tarama: Başlatılıyor...</div>
+                </div>
+
                 <div id="storage-stats" class="storage-stats" style="margin-bottom: 0.8rem; font-size: 0.82rem; color: var(--text-muted);">
                     <div id="storage-used-text">Depo Kullanımı: Hesaplanıyor...</div>
                 </div>
@@ -214,9 +225,42 @@
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
 
+    <!-- Sync Options Modal -->
+    <div id="sync-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 480px; padding: 1.5rem; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color);">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1.15rem;">🔄 Klasör Senkronizasyonu</h3>
+                <button class="modal-close" id="sync-modal-close" style="background: none; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 0.5rem 0 1rem 0;">
+                <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.2rem; line-height: 1.4;">
+                    Bilgisayarınızdaki (örn: Masaüstündeki <strong>cloudsync test</strong>) klasörünü seçin. Tarayıcı sekmeniz açık kaldığı sürece dosya değişiklikleri canlı olarak eşitlenecektir.
+                </p>
+                
+                <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                    <button id="btn-start-auto-watcher" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); border: none; padding: 0.9rem 1rem; text-align: left; display: flex; align-items: center; gap: 12px; font-weight: 600; border-radius: 6px;">
+                        <span style="font-size: 1.6rem;">⚡</span>
+                        <div>
+                            <div style="font-size: 0.95rem; color: #fff;">Canlı Otomatik Eşitlemeyi Başlat</div>
+                            <div style="font-size: 0.78rem; opacity: 0.9; font-weight: normal; color: #d1fae5;">Klasördeki değişiklikleri gerçek zamanlı izler ve otomatik buluta yükler.</div>
+                        </div>
+                    </button>
+
+                    <button id="btn-run-once-sync" class="btn btn-secondary" style="padding: 0.9rem 1rem; text-align: left; display: flex; align-items: center; gap: 12px; border-radius: 6px;">
+                        <span style="font-size: 1.6rem;">⬆️</span>
+                        <div>
+                            <div style="font-size: 0.95rem;">Tek Seferlik Yükle & Eşitle</div>
+                            <div style="font-size: 0.78rem; color: var(--text-muted);">Klasördeki mevcut tüm dosyaları tek seferde buluta aktarır.</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
-    <script src="/static/js/app.js?v=5"></script>
-    <script src="/static/js/filemanager.js?v=5"></script>
-    <script src="/static/js/editor.js?v=5"></script>
+    <script src="/static/js/app.js?v=6"></script>
+    <script src="/static/js/filemanager.js?v=6"></script>
+    <script src="/static/js/editor.js?v=6"></script>
 </body>
 </html>

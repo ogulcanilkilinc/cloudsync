@@ -45,8 +45,41 @@ window.FileManager = {
             }
         });
 
-        // Folder Sync via HTML5 File System Access or webkitdirectory
-        safeOn('btn-sync-folder', 'click', async () => {
+        // Sync Folder button -> open modal
+        safeOn('btn-sync-folder', 'click', () => {
+            const modal = document.getElementById('sync-modal');
+            if (modal) modal.style.display = 'flex';
+        });
+
+        safeOn('sync-modal-close', 'click', () => {
+            const modal = document.getElementById('sync-modal');
+            if (modal) modal.style.display = 'none';
+        });
+
+        // Start Live Auto-Watcher
+        safeOn('btn-start-auto-watcher', 'click', async () => {
+            const modal = document.getElementById('sync-modal');
+            if (modal) modal.style.display = 'none';
+
+            if (window.showDirectoryPicker) {
+                try {
+                    const dirHandle = await window.showDirectoryPicker();
+                    this.liveWatcher.start(dirHandle);
+                } catch (e) {
+                    if (e.name !== 'AbortError') {
+                        App.showToast('Klasör seçilemedi: ' + e.message, 'error');
+                    }
+                }
+            } else {
+                App.showToast('Tarayıcınız canlı klasör izlemeyi desteklemiyor. Lütfen Chrome, Edge veya Opera kullanın.', 'warning');
+            }
+        });
+
+        // Run One-Once Sync
+        safeOn('btn-run-once-sync', 'click', async () => {
+            const modal = document.getElementById('sync-modal');
+            if (modal) modal.style.display = 'none';
+
             if (window.showDirectoryPicker) {
                 try {
                     const dirHandle = await window.showDirectoryPicker();
@@ -84,6 +117,11 @@ window.FileManager = {
                 const input = document.getElementById('folder-upload-input');
                 if (input) input.click();
             }
+        });
+
+        // Stop live sync
+        safeOn('btn-stop-live-sync', 'click', () => {
+            this.liveWatcher.stop();
         });
 
         // Folder upload button (HTML5 webkitdirectory)
@@ -949,6 +987,114 @@ window.FileManager = {
             }
         } catch (err) {
             content.innerHTML = `<div class="error-message" style="padding: 1rem;">Günlükler yüklenemedi: ${err.message}</div>`;
+        }
+    },
+
+    liveWatcher: {
+        dirHandle: null,
+        timer: null,
+        fileStates: new Map(),
+        isScanning: false,
+
+        start: async function(dirHandle) {
+            this.stop();
+            this.dirHandle = dirHandle;
+            this.fileStates.clear();
+
+            const box = document.getElementById('live-watcher-box');
+            const nameEl = document.getElementById('live-watcher-folder-name');
+            const statsEl = document.getElementById('live-watcher-stats');
+            
+            if (box) box.style.display = 'block';
+            if (nameEl) nameEl.textContent = `📁 ${dirHandle.name}`;
+            if (statsEl) statsEl.textContent = 'İlk tarama yapılıyor...';
+
+            App.showToast(`"${dirHandle.name}" için canlı izleme başlatıldı.`, 'success');
+            
+            await this.scanAndSync(true);
+
+            this.timer = setInterval(() => {
+                this.scanAndSync(false);
+            }, 8000); // Check every 8 seconds
+        },
+
+        stop: function() {
+            if (this.timer) {
+                clearInterval(this.timer);
+                this.timer = null;
+            }
+            this.dirHandle = null;
+            this.fileStates.clear();
+            const box = document.getElementById('live-watcher-box');
+            if (box) box.style.display = 'none';
+            App.showToast('Canlı izleme durduruldu.', 'info');
+        },
+
+        scanAndSync: async function(isInitial = false) {
+            if (!this.dirHandle || this.isScanning) return;
+            this.isScanning = true;
+
+            const statsEl = document.getElementById('live-watcher-stats');
+            try {
+                const currentFiles = [];
+                const readHandle = async (handle, subPath = '') => {
+                    for await (const entry of handle.values()) {
+                        if (entry.kind === 'file') {
+                            const file = await entry.getFile();
+                            const fullSub = subPath ? `${this.dirHandle.name}/${subPath}` : this.dirHandle.name;
+                            const fullFilePath = `${fullSub}/${file.name}`;
+                            currentFiles.push({
+                                file: file,
+                                targetSubPath: fullSub,
+                                fullFilePath: fullFilePath,
+                                mtime: file.lastModified,
+                                size: file.size
+                            });
+                        } else if (entry.kind === 'directory') {
+                            const nextSub = subPath ? `${subPath}/${entry.name}` : entry.name;
+                            await readHandle(entry, nextSub);
+                        }
+                    }
+                };
+
+                await readHandle(this.dirHandle, '');
+
+                // Find new or modified files
+                const toUpload = [];
+                currentFiles.forEach(item => {
+                    const prev = this.fileStates.get(item.fullFilePath);
+                    if (!prev || prev.mtime !== item.mtime || prev.size !== item.size) {
+                        toUpload.push(item);
+                    }
+                });
+
+                if (toUpload.length > 0) {
+                    if (!isInitial) {
+                        App.showToast(`⚡ ${toUpload.length} dosyada değişiklik algılandı, eşitleniyor...`, 'info');
+                    }
+                    
+                    currentFiles.forEach(item => {
+                        this.fileStates.set(item.fullFilePath, { mtime: item.mtime, size: item.size });
+                    });
+                    
+                    FileManager.uploadStructuredFiles(toUpload, App.state.currentPath);
+                } else {
+                    currentFiles.forEach(item => {
+                        this.fileStates.set(item.fullFilePath, { mtime: item.mtime, size: item.size });
+                    });
+                }
+
+                if (statsEl) {
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    statsEl.textContent = `Son kontrol: ${timeStr} (${currentFiles.length} dosya)`;
+                }
+            } catch (err) {
+                console.error("Live watcher scan error:", err);
+                if (statsEl) statsEl.textContent = 'Tarama hatası oluştu.';
+            } finally {
+                this.isScanning = false;
+            }
         }
     }
 };
