@@ -24,4 +24,4 @@ ENV DATABASE_URL=sqlite:////app/data/cloudsync.db
 
 EXPOSE 8765
 
-CMD ["python", "run.py", "--host", "0.0.0.0", "--port", "8765"]
+CMD ["python", "run.py", "--host", "0.0.0.0"]
