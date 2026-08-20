@@ -748,85 +748,69 @@ window.FileManager = {
         });
     },
 
-    downloadFile: async function(path) {
-        try {
-            const token = localStorage.getItem('access_token');
-            const response = await fetch(`/api/files/download?path=${encodeURIComponent(path)}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (!response.ok) throw new Error('İndirme başarısız');
-            
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const pathParts = path.split('/');
-            a.download = pathParts[pathParts.length - 1];
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        } catch (err) {
-            App.showToast(err.message, 'error');
-        }
+    downloadFile: function(path) {
+        const token = localStorage.getItem('access_token');
+        const downloadUrl = `/api/files/download?path=${encodeURIComponent(path)}&token=${encodeURIComponent(token || '')}`;
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        const filename = path.split('/').pop();
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            if (a.parentNode) document.body.removeChild(a);
+        }, 2000);
     },
 
-    downloadFolder: async function(path) {
-        try {
-            App.showToast('Klasör ZIP olarak hazırlanıyor...', 'info');
-            const token = localStorage.getItem('access_token');
-            const response = await fetch(`/api/files/download-folder?path=${encodeURIComponent(path)}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (!response.ok) throw new Error('Klasör indirme başarısız');
-            
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const folderName = path ? path.split('/').pop() : 'tum_klasorler';
-            a.download = `${folderName}.zip`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        } catch (err) {
-            App.showToast(err.message, 'error');
-        }
+    downloadFolder: function(path) {
+        App.showToast('Klasör ZIP olarak hazırlanıyor...', 'info');
+        const token = localStorage.getItem('access_token');
+        const downloadUrl = `/api/files/download-folder?path=${encodeURIComponent(path || '')}&token=${encodeURIComponent(token || '')}`;
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        const folderName = path ? path.split('/').pop() : 'tum_klasorler';
+        a.download = `${folderName}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            if (a.parentNode) document.body.removeChild(a);
+        }, 2000);
     },
 
-    downloadSelected: async function() {
+    downloadSelected: function() {
         const paths = Array.from(App.state.selectedFiles);
         if (paths.length === 0) return;
         
-        try {
-            App.showToast('Seçilenler ZIP olarak hazırlanıyor...', 'info');
-            const token = localStorage.getItem('access_token');
-            const response = await fetch('/api/files/download-zip', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ paths })
-            });
-            
-            if (!response.ok) throw new Error('ZIP indirme başarısız');
-            
-            const blob = await response.blob();
+        App.showToast('Seçilenler ZIP olarak hazırlanıyor...', 'info');
+        const token = localStorage.getItem('access_token');
+        
+        fetch('/api/files/download-zip', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ paths })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('ZIP indirme başarısız');
+            return res.blob();
+        })
+        .then(blob => {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = 'cloudsync_secilenler.zip';
             document.body.appendChild(a);
             a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        } catch (err) {
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                if (a.parentNode) document.body.removeChild(a);
+            }, 30000);
+        })
+        .catch(err => {
             App.showToast(err.message, 'error');
-        }
+        });
     },
 
     previewFile: async function(path, mimeType) {
@@ -849,6 +833,8 @@ window.FileManager = {
         const isPDF = (mimeType && mimeType.includes('pdf')) || filename.toLowerCase().endsWith('.pdf');
         const isAudio = (mimeType && mimeType.startsWith('audio/')) || filename.match(/\.(mp3|wav|ogg|m4a|aac)$/i);
         const isVideo = (mimeType && mimeType.startsWith('video/')) || filename.match(/\.(mp4|webm|mkv|mov|avi)$/i);
+        const token = localStorage.getItem('access_token') || '';
+        const mediaUrl = `/api/files/download?path=${encodeURIComponent(path)}&token=${encodeURIComponent(token)}`;
         
         if (isText) {
             if (editBtn) {
@@ -862,10 +848,7 @@ window.FileManager = {
             }
             
             try {
-                const token = localStorage.getItem('access_token');
-                const response = await fetch(`/api/files/download?path=${encodeURIComponent(path)}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const response = await fetch(mediaUrl);
                 if (!response.ok) throw new Error('Dosya okunamadı');
                 const text = await response.text();
                 content.innerHTML = `<pre style="white-space: pre-wrap; word-break: break-all; max-height: 60vh; overflow: auto; background: var(--bg-primary); padding: 1rem; border-radius: 6px; font-family: monospace; font-size: 0.9rem;">${this.escapeHtml(text)}</pre>`;
@@ -874,58 +857,16 @@ window.FileManager = {
             }
         } else if (isPDF) {
             if (editBtn) editBtn.style.display = 'none';
-            try {
-                const token = localStorage.getItem('access_token');
-                const response = await fetch(`/api/files/download?path=${encodeURIComponent(path)}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!response.ok) throw new Error('PDF yüklenemedi');
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                content.innerHTML = `<iframe src="${url}" style="width: 100%; height: 65vh; border: none; border-radius: 6px;"></iframe>`;
-            } catch (err) {
-                content.innerHTML = `<div class="error-message">${err.message}</div>`;
-            }
+            content.innerHTML = `<iframe src="${mediaUrl}" style="width: 100%; height: 65vh; border: none; border-radius: 6px;"></iframe>`;
         } else if (isAudio) {
             if (editBtn) editBtn.style.display = 'none';
-            try {
-                const token = localStorage.getItem('access_token');
-                const response = await fetch(`/api/files/download?path=${encodeURIComponent(path)}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                content.innerHTML = `<div style="text-align:center; padding: 2rem;"><audio controls autoplay src="${url}" style="width: 80%;"></audio></div>`;
-            } catch (err) {
-                content.innerHTML = `<div class="error-message">${err.message}</div>`;
-            }
+            content.innerHTML = `<div style="text-align:center; padding: 2rem;"><audio controls autoplay src="${mediaUrl}" style="width: 85%;"></audio></div>`;
         } else if (isVideo) {
             if (editBtn) editBtn.style.display = 'none';
-            try {
-                const token = localStorage.getItem('access_token');
-                const response = await fetch(`/api/files/download?path=${encodeURIComponent(path)}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                content.innerHTML = `<div style="text-align:center;"><video controls autoplay src="${url}" style="max-width: 100%; max-height: 60vh; border-radius: 6px;"></video></div>`;
-            } catch (err) {
-                content.innerHTML = `<div class="error-message">${err.message}</div>`;
-            }
+            content.innerHTML = `<div style="text-align:center;"><video controls autoplay src="${mediaUrl}" style="max-width: 100%; max-height: 60vh; border-radius: 6px;"></video></div>`;
         } else if (mimeType && mimeType.startsWith('image/')) {
             if (editBtn) editBtn.style.display = 'none';
-            try {
-                const token = localStorage.getItem('access_token');
-                const response = await fetch(`/api/files/download?path=${encodeURIComponent(path)}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!response.ok) throw new Error('Resim yüklenemedi');
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                content.innerHTML = `<div style="text-align: center;"><img src="${url}" alt="${filename}" style="max-width: 100%; max-height: 60vh; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>`;
-            } catch (err) {
-                 content.innerHTML = `<div class="error-message">${err.message}</div>`;
-            }
+            content.innerHTML = `<div style="text-align: center;"><img src="${mediaUrl}" alt="${filename}" style="max-width: 100%; max-height: 60vh; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>`;
         } else {
             if (editBtn) editBtn.style.display = 'none';
             content.innerHTML = `

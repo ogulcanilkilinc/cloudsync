@@ -1,9 +1,11 @@
+import os
+import io
+import zipfile
+import urllib.parse
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
-from typing import List
-import io
-import zipfile
 from sqlalchemy.orm import Session
 from server.database import get_db
 from server.models import User, FileRecord
@@ -37,19 +39,29 @@ async def upload_file(path: str = Form(""), file: UploadFile = File(...), curren
 def download_file(path: str, current_user: User = Depends(get_current_user)):
     try:
         content, mime_type = file_service.read_file(current_user.id, path)
-        return Response(content=content, media_type=mime_type)
+        filename = os.path.basename(path)
+        encoded_name = urllib.parse.quote(filename)
+        headers = {
+            "Content-Disposition": f'attachment; filename="{filename}"; filename*=UTF-8\'\'{encoded_name}',
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
+        return Response(content=content, media_type=mime_type or "application/octet-stream", headers=headers)
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="File not found")
+        raise HTTPException(status_code=404, detail="Dosya sunucuda bulunamadı.")
 
 @router.get("/download-folder")
 def download_folder(path: str = "", current_user: User = Depends(get_current_user)):
     try:
         zip_buf = file_service.create_zip_of_path(current_user.id, path)
-        folder_name = path.split("/")[-1] if path else "tum_dosyalar"
+        folder_name = os.path.basename(path) if path else "tum_dosyalar"
+        encoded_name = urllib.parse.quote(f"{folder_name}.zip")
         return StreamingResponse(
             iter([zip_buf.getvalue()]),
             media_type="application/zip",
-            headers={"Content-Disposition": f'attachment; filename="{folder_name}.zip"'}
+            headers={
+                "Content-Disposition": f'attachment; filename="{folder_name}.zip"; filename*=UTF-8\'\'{encoded_name}',
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -68,7 +80,7 @@ def edit_file(req: EditRequest, current_user: User = Depends(get_current_user), 
 def delete_file(path: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     success = file_service.delete_item(db, current_user.id, path)
     if not success:
-        raise HTTPException(status_code=404, detail="Not found")
+        raise HTTPException(status_code=404, detail="Öğe bulunamadı.")
     sync_service.log_sync_action(db, current_user.id, path, "delete", "Web")
     return {"message": "Deleted"}
 
@@ -118,5 +130,8 @@ def download_zip(req: ZipRequest, current_user: User = Depends(get_current_user)
     return StreamingResponse(
         iter([zip_buffer.getvalue()]),
         media_type="application/zip",
-        headers={"Content-Disposition": "attachment; filename=secilen_dosyalar.zip"}
+        headers={
+            "Content-Disposition": 'attachment; filename="secilen_dosyalar.zip"',
+            "Access-Control-Expose-Headers": "Content-Disposition"
+        }
     )
