@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudSync - Giriş Yap</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo-container">
+                <span class="logo-icon">☁️</span>
+                <h1>CloudSync</h1>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form">
+                <h2>Giriş Yap</h2>
+                <div id="login-error" class="error-message" style="display: none;"></div>
+                
+                <div class="input-group">
+                    <label for="login-username">Kullanıcı Adı</label>
+                    <div class="input-with-icon">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="login-username" name="username" required>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="login-password">Şifre</label>
+                    <div class="input-with-icon">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="login-password" name="password" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">Giriş Yap</button>
+                <div class="toggle-link">
+                    Hesabınız yok mu? <a href="#" id="show-register">Hesap oluştur</a>
+                </div>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="auth-form" style="display: none;">
+                <h2>Hesap Oluştur</h2>
+                <div id="register-error" class="error-message" style="display: none;"></div>
+                <div id="register-success" class="success-message" style="display: none;"></div>
+                
+                <div class="input-group">
+                    <label for="register-username">Kullanıcı Adı</label>
+                    <div class="input-with-icon">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="register-username" name="username" required>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="register-password">Şifre</label>
+                    <div class="input-with-icon">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="register-password" name="password" required>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="register-confirm-password">Şifreyi Onayla</label>
+                    <div class="input-with-icon">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="register-confirm-password" name="confirm_password" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-block">Kayıt Ol</button>
+                <div class="toggle-link">
+                    Zaten hesabınız var mı? <a href="#" id="show-login">Giriş yap</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="/static/js/auth.js?v=3"></script>
+</body>
+</html>

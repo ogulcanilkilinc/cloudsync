@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  cloudsync:
+    build: .
+    container_name: cloudsync_server
+    restart: always
+    ports:
+      - "8765:8765"
+    environment:
+      - PORT=8765
+      - SECRET_KEY=degistirin_guclu_bir_anahtar_yazin
+      - STORAGE_DIR=/app/storage
+      - DATABASE_URL=sqlite:////app/data/cloudsync.db
+    volumes:
+      - ./storage:/app/storage
+      - ./data:/app/data

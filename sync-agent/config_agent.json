@@ -1,0 +1,24 @@
+{
+  "server_url": "http://localhost:8765",
+  "username": "admin",
+  "password": "admin123",
+  "device_name": "bilgisayarim",
+  "sync_folders": [
+    {
+      "local_path": "./belgelerim",
+      "remote_path": ""
+    }
+  ],
+  "sync_interval_seconds": 15,
+  "ignored_patterns": [
+    "*.tmp",
+    "*.swp",
+    "~*",
+    "*.part",
+    "__pycache__",
+    ".git",
+    ".DS_Store",
+    "Thumbs.db",
+    ".sync_state.json"
+  ]
+}

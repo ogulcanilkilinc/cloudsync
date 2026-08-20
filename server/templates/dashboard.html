@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudSync - Panel</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="dashboard-body">
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo-container">
+            <span class="logo-icon">☁️</span>
+            <h1>CloudSync</h1>
+        </div>
+        
+        <div class="nav-right">
+            <div id="sync-status" class="sync-status">
+                <span class="sync-icon">🔄</span>
+                <span class="sync-text">Senkronize</span>
+            </div>
+            <div class="user-info">
+                <span class="user-icon">👤</span>
+                <span id="username-display">Kullanıcı</span>
+            </div>
+            <button id="logout-btn" class="btn btn-outline btn-sm">Çıkış Yap</button>
+        </div>
+    </nav>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3>Klasörler</h3>
+            </div>
+            <div id="folder-tree" class="folder-tree">
+                <!-- Tree items will be dynamically injected here -->
+            </div>
+            <div class="sidebar-footer">
+                <div id="storage-stats" class="storage-stats" style="margin-bottom: 0.8rem; font-size: 0.82rem; color: var(--text-muted);">
+                    <div id="storage-used-text">Depo Kullanımı: Hesaplanıyor...</div>
+                </div>
+                <button id="toggle-sync-log" class="btn btn-secondary btn-block">Senkronizasyon Günlüğü</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content-area">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="breadcrumb-container" id="breadcrumb">
+                    <!-- Breadcrumbs will be rendered here -->
+                </div>
+
+                <div class="search-container" style="flex: 1; max-width: 320px; margin: 0 1rem;">
+                    <input type="text" id="file-search-input" placeholder="🔍 Ara..." class="search-input" style="width: 100%; padding: 0.45rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 0.9rem;">
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="btn-upload" title="Bilgisayarınızdan dosya yükleyin">⬆️ Dosya Yükle</button>
+                    <input type="file" id="file-upload-input" multiple style="display: none;">
+                    
+                    <button class="btn btn-secondary" id="btn-upload-folder" title="Tüm klasörü içeriğiyle birlikte yükleyin">📁 Klasör Yükle</button>
+                    <input type="file" id="folder-upload-input" webkitdirectory directory multiple style="display: none;">
+                    
+                    <button class="btn btn-secondary" id="btn-new-folder" title="Yeni klasör oluştur">➕ Yeni Klasör</button>
+                    
+                    <div class="selection-actions" id="selection-actions" style="display: none;">
+                        <button class="btn btn-secondary" id="btn-download-selected">⬇️ İndir (ZIP)</button>
+                        <button class="btn btn-danger" id="btn-delete-selected">🗑️ Sil</button>
+                    </div>
+                    
+                    <div class="view-toggle">
+                        <button class="btn btn-icon active" id="btn-view-list" title="Liste Görünümü">📋</button>
+                        <button class="btn btn-icon" id="btn-view-grid" title="Izgara Görünümü">🔲</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File List Area -->
+            <div class="file-list-container" id="file-list-container">
+                <table class="file-table" id="file-table">
+                    <thead>
+                        <tr>
+                            <th class="col-checkbox"><input type="checkbox" id="select-all"></th>
+                            <th class="col-icon">Tür</th>
+                            <th class="col-name sortable" data-sort="name">Ad</th>
+                            <th class="col-size sortable" data-sort="size">Boyut</th>
+                            <th class="col-type">Tipi</th>
+                            <th class="col-date sortable" data-sort="date">Değiştirilme Tarihi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="file-list-body">
+                        <!-- File rows will go here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Drag & Drop Overlay -->
+            <div id="drop-overlay" class="drop-overlay" style="display: none;">
+                <div class="drop-message">
+                    <span class="drop-icon">⬆️</span>
+                    <h2>Dosya veya klasörleri buraya bırakın</h2>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Sürüklediğiniz tüm dosya ve klasörler anında yüklenecektir.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Sync Log Panel -->
+    <div id="sync-log-panel" class="sync-log-panel collapsed">
+        <div class="sync-log-header">
+            <h3>Senkronizasyon Geçmişi & İşlem Kayıtları</h3>
+            <button id="close-sync-log" class="btn btn-icon">❌</button>
+        </div>
+        <div class="sync-log-content" id="sync-log-content">
+            <!-- Sync logs -->
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Prompt Modal (New Folder, Rename) -->
+    <div id="prompt-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3 id="prompt-title">Başlık</h3>
+            <input type="text" id="prompt-input" class="modal-input" style="width: 100%; box-sizing: border-box;">
+            <div class="modal-actions">
+                <button id="prompt-cancel" class="btn btn-secondary">İptal</button>
+                <button id="prompt-confirm" class="btn btn-primary">Tamam</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3 id="confirm-title">Emin misiniz?</h3>
+            <p id="confirm-message">Bu işlemi gerçekleştirmek istediğinize emin misiniz?</p>
+            <div class="modal-actions">
+                <button id="confirm-cancel" class="btn btn-secondary">İptal</button>
+                <button id="confirm-confirm" class="btn btn-danger">Evet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Preview Modal -->
+    <div id="preview-modal" class="modal preview-modal" style="display: none;">
+        <div class="modal-content large" style="max-width: 850px; width: 90%;">
+            <div class="modal-header">
+                <h3 id="preview-title">Önizleme</h3>
+                <div class="modal-header-actions">
+                    <button id="preview-edit-btn" class="btn btn-secondary" style="display: none;">✏️ Düzenle</button>
+                    <button id="preview-download-btn" class="btn btn-primary">⬇️ İndir</button>
+                    <button id="preview-close-btn" class="btn btn-icon">❌</button>
+                </div>
+            </div>
+            <div id="preview-content" class="preview-body" style="padding: 1rem; max-height: 70vh; overflow-y: auto;">
+                <!-- Content will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Text Editor Modal -->
+    <div id="editor-modal" class="modal editor-modal" style="display: none;">
+        <div class="modal-content large" style="max-width: 950px; width: 95%; height: 85vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 0.8rem;">
+                    <h3 id="editor-title" style="margin: 0;">Düzenleyici</h3>
+                    <span id="editor-path" class="editor-path" style="font-family: monospace; font-size: 0.85rem; color: var(--accent);"></span>
+                </div>
+                <div class="modal-header-actions" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span id="editor-status" class="editor-status" style="font-size: 0.85rem; color: var(--text-muted);"></span>
+                    <button id="editor-save-btn" class="btn btn-primary">💾 Kaydet (Ctrl+S)</button>
+                    <button id="editor-close-btn" class="btn btn-icon">❌</button>
+                </div>
+            </div>
+            <div class="editor-body" style="flex: 1; display: flex; overflow: hidden; position: relative;">
+                <div class="editor-line-numbers" id="editor-line-numbers" style="user-select: none;">1</div>
+                <textarea id="editor-textarea" class="code-editor" spellcheck="false" style="flex: 1; resize: none; border: none; outline: none; font-family: monospace; padding: 0.8rem; background: transparent; color: #eee;"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="context-menu" class="context-menu" style="display: none;">
+        <ul class="context-menu-list">
+            <li id="cm-open">Aç</li>
+            <li id="cm-preview">Önizle</li>
+            <li id="cm-edit">Düzenle</li>
+            <li class="cm-divider"></li>
+            <li id="cm-download">İndir</li>
+            <li id="cm-download-folder" style="display: none;">Klasörü ZIP Olarak İndir</li>
+            <li class="cm-divider"></li>
+            <li id="cm-rename">Yeniden Adlandır</li>
+            <li id="cm-move">Taşı</li>
+            <li class="cm-divider"></li>
+            <li id="cm-delete" class="text-danger">Sil</li>
+        </ul>
+    </div>
+
+    <!-- Upload Progress -->
+    <div id="upload-progress-container" class="upload-progress-container" style="display: none;">
+        <div class="upload-header">
+            <span id="upload-status-text">Dosyalar Yükleniyor...</span>
+            <span id="upload-percent">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div id="upload-progress-bar" class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/static/js/app.js?v=4"></script>
+    <script src="/static/js/filemanager.js?v=4"></script>
+    <script src="/static/js/editor.js?v=4"></script>
+</body>
+</html>
